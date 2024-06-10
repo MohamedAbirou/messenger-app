@@ -6,6 +6,9 @@ import { Link, usePage } from "@inertiajs/react";
 import { useEventBus } from "@/EventBus";
 import { Toast } from "@/Components/App/Toast";
 import { NewMessageNotification } from "@/Components/App/NewMessageNotification";
+import PrimaryButton from "@/Components/PrimaryButton";
+import { UserPlusIcon } from "@heroicons/react/24/solid";
+import { NewUserModal } from "@/Components/App/NewUserModal";
 
 export default function AuthenticatedLayout({ header, children }) {
   const page = usePage();
@@ -13,6 +16,7 @@ export default function AuthenticatedLayout({ header, children }) {
   const conversations = page.props.conversations;
   const [showingNavigationDropdown, setShowingNavigationDropdown] =
     useState(false);
+  const [showNewUserModal, setShowNewUserModal] = useState(false);
 
   const { emit } = useEventBus();
 
@@ -52,6 +56,14 @@ export default function AuthenticatedLayout({ header, children }) {
               }`,
           });
         });
+
+      if (conversation.is_group) {
+        Echo.private(`group.deleted.${conversation.id}`)
+          .listen("GroupDeleted", (e) => {
+            emit("group.deleted", { id: e.id, name: e.name });
+          })
+          .error((e) => console.error(e));
+      }
     });
 
     return () => {
@@ -68,6 +80,10 @@ export default function AuthenticatedLayout({ header, children }) {
         }
 
         Echo.leave(channel);
+
+        if (conversation.is_group) {
+          Echo.leave(`group.deleted.${conversation.id}`);
+        }
       });
     };
   }, [conversations]);
@@ -87,7 +103,14 @@ export default function AuthenticatedLayout({ header, children }) {
               </div>
 
               <div className="hidden sm:flex sm:items-center sm:ms-6">
-                <div className="ms-3 relative">
+                <div className="flex items-center ms-3 relative">
+                  {user.is_admin && (
+                    <PrimaryButton onClick={(ev) => setShowNewUserModal(true)}>
+                      <UserPlusIcon className="h-5 w-5 mr-2" />
+                      Add New User
+                    </PrimaryButton>
+                  )}
+
                   <Dropdown>
                     <Dropdown.Trigger>
                       <span className="inline-flex rounded-md">
@@ -220,6 +243,10 @@ export default function AuthenticatedLayout({ header, children }) {
       </div>
       <Toast />
       <NewMessageNotification />
+      <NewUserModal
+        show={showNewUserModal}
+        onClose={(ev) => setShowNewUserModal(false)}
+      />
     </>
   );
 }

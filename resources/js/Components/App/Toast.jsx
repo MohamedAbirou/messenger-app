@@ -20,7 +20,7 @@ export const Toast = ({}) => {
   }, [on]);
 
   return (
-    <div className="toast toast-top toast-end">
+    <div className="toast toast-top toast-end min-w-[280px] w-full xs:w-auto">
       {toasts.map((toast) => (
         <div
           key={toast.uuid}
